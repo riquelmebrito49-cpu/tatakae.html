@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciência Delas · Oficina da Linha do Tempo</title>
+<style>
+/* ===== BLOCOS DO ZERO: jogo de HTML e CSS (arquivo único, funciona offline) ===== */
+*{box-sizing:border-box;margin:0}
+:root{--bg:#120e27;--pan:#1c1738;--pan2:#262050;--line:#3a3166;--txt:#f1ecff;--mut:#a99fcc;--roxo:#7b2cbf;--mag:#d6336c;--amb:#f5a300;--grad:linear-gradient(135deg,#241a66,#5a1d73 55%,#b0215f)}
+body{font:15px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+code{font-family:Consolas,"Courier New",monospace;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;color:#ffd27a;font-size:.9em}
+
+/* barra do topo */
+.top{display:flex;align-items:center;gap:16px;padding:0 16px;height:56px;background:var(--grad);flex:none}
+.logo{font-weight:900;letter-spacing:.08em;white-space:nowrap}
+.dots{display:flex;gap:8px;flex:1;justify-content:center}
+.dot{width:32px;height:32px;border-radius:8px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.25);display:grid;place-items:center;font-size:.8rem;font-weight:800;color:#fff;padding:0}
+.dot.boss{border-radius:50%}
+.dot.feito{background:var(--amb);border-color:var(--amb);color:#1b1b1b}
+.dot.atual{background:#fff;color:#241a66;border-color:#fff;box-shadow:0 0 0 3px rgba(245,163,0,.7)}
+.dot:not(:disabled){cursor:pointer}
+.hud{display:flex;gap:10px;align-items:center;font-weight:700;white-space:nowrap}
+.hud button{background:rgba(255,255,255,.15);border:0;border-radius:8px;padding:4px 10px}
+.hud button.on{background:var(--amb);color:#1b1b1b}
+.abas{display:none}
+
+/* layout principal */
+.jogo{flex:1;display:grid;grid-template-columns:340px minmax(0,1fr) minmax(0,1fr);gap:10px;padding:10px;min-height:0}
+.painel{background:var(--pan);border:2px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+
+/* painel da missão */
+.p-missao{overflow-y:auto;padding:14px;gap:12px}
+.mascote{display:flex;gap:10px;align-items:flex-start}
+.mascote svg{width:64px;height:64px;flex:none;image-rendering:pixelated}
+.balao{position:relative;background:#fff;color:#241a33;border-radius:12px;padding:10px 12px;font-size:.88rem;flex:1}
+.balao::before{content:"";position:absolute;left:-8px;top:18px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+.balao pre{background:#241a33;color:#ffd27a;padding:8px;border-radius:8px;margin-top:6px;font:12px/1.5 Consolas,monospace;overflow:auto;white-space:pre}
+.balao code{background:#efe6f8;color:#5a1d73}
+h2.titulo{font-size:1.15rem;line-height:1.25}
+.conceito{background:var(--pan2);border-radius:10px;padding:2px 12px;font-size:.88rem}
+.conceito summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--amb)}
+.conceito ul{padding-left:18px;margin:6px 0 10px}
+.conceito p{margin:6px 0}
+.objs{list-style:none;padding:0;display:grid;gap:6px}
+.objs li{display:flex;gap:8px;background:var(--pan2);border-radius:10px;padding:8px 10px;font-size:.86rem;border-left:4px solid var(--line)}
+.objs li.ok{border-left-color:var(--amb);background:#2f2655}
+.objs li.no{border-left-color:var(--mag)}
+.objs li i{font-style:normal;flex:none}
+.sec-t{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:700}
+.acoes-esq{display:flex;gap:8px;flex-wrap:wrap}
+.btn-sec{background:var(--pan2);border:2px solid var(--line);border-radius:10px;padding:7px 12px;font-size:.85rem;font-weight:600}
+.btn-sec:hover:not(:disabled){border-color:var(--amb)}
+.btn-sec:disabled{opacity:.45;cursor:default}
+
+/* editor */
+.barra{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0d0a1f;font-size:.8rem;color:var(--mut);flex:none}
+.barra b{color:#fff;font-weight:600}
+.ed{position:relative;flex:1;min-height:0;background:#0d0a1f}
+.gut,.ed pre,.ed textarea{font:14px/22px Consolas,"Courier New",monospace;margin:0}
+.gut{position:absolute;left:0;top:0;bottom:0;width:44px;overflow:hidden;text-align:right;padding:14px 10px 14px 0;color:#5d5490;white-space:pre;user-select:none;background:#0a081a}
+.ed pre,.ed textarea{position:absolute;left:44px;top:0;right:0;bottom:0;padding:14px 14px 40px;tab-size:2;white-space:pre;border:0;background:transparent;overflow:auto}
+.ed pre{pointer-events:none;color:#e6defb;overflow:hidden}
+.ed textarea{color:transparent;caret-color:#fff;resize:none;outline:none}
+.ed textarea::selection{background:rgba(123,44,191,.55)}
+.ed .t{color:#ff7aa8}.ed .a{color:#ffd27a}.ed .s{color:#7be3f2}.ed .c{color:#6f6699;font-style:italic}.ed .p{color:#7be3f2}.ed .h{color:#ffd27a}
+.rodape-ed{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--pan);flex-wrap:wrap;flex:none}
+.exec{background:linear-gradient(#ff8a1f,#f06a00);color:#fff;border:0;border-bottom:5px solid #a84700;border-radius:8px;padding:10px 22px;font-size:1.15rem;font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.exec:hover{filter:brightness(1.08)}.exec:active{transform:translateY(3px);border-bottom-width:2px}
+.msg{flex:1;font-weight:600;font-size:.9rem;min-width:140px}
+.msg.bom{color:var(--amb)}.msg.ruim{color:#ff7aa8}
+.prox{background:var(--amb);color:#1b1b1b;border:0;border-bottom:5px solid #b87900;border-radius:8px;padding:10px 20px;font-weight:900;animation:pula .8s infinite alternate}
+@keyframes pula{to{transform:translateY(-3px)}}
+
+/* prévia */
+.navegador{display:flex;gap:6px;align-items:center;padding:8px 12px;background:#0d0a1f;font-size:.8rem;color:var(--mut);flex:none}
+.navegador i{width:10px;height:10px;border-radius:50%;background:var(--mag)}.navegador i:nth-child(2){background:var(--amb)}.navegador i:nth-child(3){background:#7be3f2}
+.navegador span{margin-left:10px;background:var(--pan2);padding:2px 12px;border-radius:999px;flex:1}
+iframe{flex:1;width:100%;border:0;background:#fff;min-height:0}
+
+.cient{background:linear-gradient(135deg,#3b1d63,#5a1d73);border-radius:12px;padding:10px 12px;font-size:.84rem;border-left:4px solid var(--amb)}
+.cient i{color:#ffd27a}
+
+.autora{text-align:left;margin-bottom:6px}.autora label{display:block;color:var(--mut);font-weight:700;margin:4px 0 6px;font-size:.9rem}
+.cartao select{width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--pan2);color:var(--txt);font:inherit;margin-bottom:10px}
+.cartao textarea.cod{width:100%;height:110px;border-radius:12px;border:2px solid var(--line);background:#0d0a1f;color:#ffd27a;font:12px/1.4 Consolas,monospace;padding:10px;margin-bottom:12px;resize:none;word-break:break-all}
+.minha{font-size:.84rem;background:var(--pan2);border-radius:10px;padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.minha a{color:var(--amb)}
+
+.vsc{margin-left:auto;font-size:.72rem;color:var(--mut)}
+.sug{position:absolute;z-index:20;min-width:270px;max-width:92%;max-height:240px;overflow:auto;background:#1b1635;border:1px solid #4b3f86;border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.5);font:13px/1.2 Consolas,"Courier New",monospace}
+.sug[hidden]{display:none}
+.si{display:flex;gap:8px;align-items:center;padding:5px 10px;cursor:pointer;color:#e6defb}
+.si.on{background:#5a1d73}
+.sl{flex:1;white-space:pre}.sd{color:#a99fcc;font-size:.82em;font-family:"Segoe UI",system-ui,sans-serif}
+.k{width:24px;text-align:center;font-size:.7rem;border-radius:4px;padding:2px 0;font-weight:700}
+.kt{background:#7a1f4d;color:#ffb3d1}.ka{background:#6b4b00;color:#ffd27a}.kc{background:#0f4c5c;color:#7be3f2}.kv{background:#3b2f7a;color:#c9b6ff}.kj{background:#4a3a8a;color:#d9ccff}.kw{background:#333;color:#ccc}.ke{background:#7a4b00;color:#ffd27a}
+#medida{position:absolute;visibility:hidden;white-space:pre;font:14px/22px Consolas,"Courier New",monospace;left:0;top:0}
+
+/* telas cheias (início e fim) */
+.tela{position:fixed;inset:0;z-index:50;background:rgba(10,7,25,.88);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px}
+.tela[hidden]{display:none}
+.cartao{background:var(--pan);border:2px solid var(--line);border-radius:22px;max-width:560px;width:100%;padding:28px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5);max-height:94vh;overflow:auto}
+.cartao h1{font-size:1.9rem;line-height:1.15;margin:8px 0 10px}
+.cartao p{color:var(--mut);margin-bottom:14px}
+.cartao input{width:100%;padding:12px 16px;border-radius:12px;border:2px solid var(--line);background:var(--pan2);color:var(--txt);font:inherit;margin-bottom:14px;text-align:center}
+.grande{background:linear-gradient(#ff8a1f,#f06a00);color:#fff;border:0;border-bottom:5px solid #a84700;border-radius:12px;padding:12px 28px;font-size:1.1rem;font-weight:900;margin:4px}
+.sec2{background:var(--pan2);border:2px solid var(--line);border-radius:12px;padding:10px 20px;font-weight:700;margin:4px}
+.selos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.selo{background:var(--pan2);border:2px solid var(--amb);border-radius:12px;padding:6px 12px;font-size:.85rem;font-weight:700}
+.xpg{font-size:3rem;font-weight:900;color:var(--amb);line-height:1}
+.cf{position:fixed;top:-10px;width:10px;height:10px;z-index:60;animation:cai 1.8s ease-in forwards;pointer-events:none}
+@keyframes cai{to{transform:translateY(105vh) rotate(720deg);opacity:.9}}
+
+/* celular e telas pequenas: uma aba por vez */
+@media(max-width:1000px){
+  .jogo{grid-template-columns:1fr}
+  .painel{display:none}
+  body[data-aba=missao] .p-missao,body[data-aba=codigo] .p-codigo,body[data-aba=prev] .p-prev{display:flex}
+  .abas{display:flex;background:var(--pan);flex:none}
+  .abas button{flex:1;padding:10px;background:none;border:0;border-bottom:3px solid transparent;font-weight:700;color:var(--mut)}
+  .abas button.on{color:#fff;border-color:var(--amb)}
+  .logo{display:none}
+}
+</style>
+</head>
+<body data-aba="missao">
+
+<header class="top">
+  <div class="logo">🔬 CIÊNCIA DELAS · OFICINA</div>
+  <div class="dots" id="dots"></div>
+  <div class="hud"><span id="xp">0 XP</span><span id="tempo">⏱ 00:00</span><button id="btnI" title="Modo instrutor: libera todas as missões">👩‍🏫</button></div>
+</header>
+<nav class="abas" id="abas"><button data-a="missao">Missão</button><button data-a="codigo">Código</button><button data-a="prev">Resultado</button></nav>
+
+<main class="jogo">
+  <section class="painel p-missao">
+    <div class="mascote">
+      <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="4" y="1" width="8" height="3" fill="#f5a300"/><rect x="3" y="4" width="10" height="1" fill="#d68a00"/>
+        <rect x="4" y="5" width="8" height="6" fill="#f2c7a0"/><rect x="5" y="7" width="2" height="2" fill="#241a33"/><rect x="9" y="7" width="2" height="2" fill="#241a33"/>
+        <rect x="6" y="10" width="4" height="1" fill="#b0215f"/><rect x="3" y="11" width="10" height="5" fill="#7b2cbf"/><rect x="7" y="11" width="2" height="5" fill="#d6336c"/>
+      </svg>
+      <div class="balao" id="balao"></div>
+    </div>
+    <h2 class="titulo" id="titulo"></h2>
+    <div class="cient" id="cient"></div>
+    <div class="minha" id="minha"></div>
+    <details class="conceito" id="conceito" open><summary>📘 Conceito da missão</summary><div id="conceitoTxt"></div></details>
+    <div class="sec-t">Objetivos (o portão confere tudo ao clicar em Executar)</div>
+    <ul class="objs" id="objs"></ul>
+    <div class="acoes-esq">
+      <button class="btn-sec" id="btnDica">💡 Dica</button>
+      <button class="btn-sec" id="btnSalv" hidden>🛟 Ponto de salvamento (−30 XP)</button>
+      <button class="btn-sec" id="btnReset">↺ Reiniciar fase</button>
+      <button class="btn-sec" id="btnRes">📤 Enviar resultado</button>
+    </div>
+  </section>
+
+  <section class="painel p-codigo">
+    <div class="barra"><b>index.html</b><span id="nomeNivel"></span><span class="vsc">⚡ Tab: atalhos (p, ul, !) · Ctrl+Espaço: sugestões</span></div>
+    <div class="ed">
+      <div class="gut" id="gut">1</div>
+      <pre id="pre" aria-hidden="true"></pre>
+      <textarea id="ed" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Editor de código"></textarea>
+      <div class="sug" id="sug" hidden></div><span id="medida">MMMMMMMMMM</span>
+    </div>
+    <div class="rodape-ed">
+      <button class="exec" id="btnExec">▶ Executar</button>
+      <div class="msg" id="msg">Digite o código e clique em Executar (ou Ctrl + Enter).</div>
+      <button class="prox" id="btnProx" hidden>Próxima missão →</button>
+    </div>
+  </section>
+
+  <section class="painel p-prev">
+    <div class="navegador"><i></i><i></i><i></i><span id="url">minha-linha-do-tempo.html</span></div>
+    <iframe id="fr" title="Prévia da página" sandbox="allow-same-origin allow-scripts"></iframe>
+  </section>
+</main>
+
+<div class="tela" id="tela" hidden></div>
+
+<script>
+/* ============================================================
+   PASSO 1 · AUXILIARES
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const AVATAR = "data:image/svg+xml," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#7b2cbf'/><stop offset='1' stop-color='#d6336c'/></linearGradient></defs><rect width='100' height='100' fill='url(#g)'/><circle cx='50' cy='38' r='18' fill='#fff' opacity='.9'/><path d='M14 100c4-26 20-36 36-36s32 10 36 36z' fill='#fff' opacity='.9'/></svg>");
+
+// ajudantes das verificações (rodam na página que o aluno criou, dentro do iframe)
+const T   = e => e ? e.textContent.trim() : "";
+const cs  = (c, e, p) => c.w.getComputedStyle(e).getPropertyValue(p);
+const rad = (c, e) => cs(c, e, "border-top-left-radius") || cs(c, e, "border-radius") || "0px";
+const decl = (c, sel, p) => {                       // valor declarado de uma propriedade num seletor
+  const procurar = regras => {
+    for (const r of regras) {
+      try {
+        if (r.selectorText && r.selectorText.split(",").map(s => s.trim()).includes(sel)) {
+          const v = r.style && r.style.getPropertyValue(p);
+          if (v) return v;
+        }
+        if (r.cssRules) { const v = procurar(r.cssRules); if (v) return v; }
+      } catch (_) {}
+    }
+    return "";
+  };
+  for (const sh of c.d.styleSheets) {
+    try { const v = procurar(sh.cssRules); if (v) return v; } catch (_) {}
+  }
+  return "";
+};
+const DO_EXEMPLO = ["#1e1b4b","#f5a300","#7b2cbf","white","#1b1b1b","#fff","#ffffff"];
+function coresProprias(c){                          // quantas cores o aluno usou além das do exemplo
+  const css = [...c.d.querySelectorAll("style")].map(s => s.textContent).join(" ");
+  const achou = css.match(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|\b(?:red|blue|pink|purple|orange|yellow|black|green|teal|gold|navy|tomato|coral|crimson|magenta|cyan|hotpink|indigo|violet|lime|aqua|silver|gray|grey|brown|salmon|turquoise|skyblue|lightblue)\b/gi) || [];
+  return new Set(achou.map(x => x.toLowerCase().replace(/\s/g,"")).filter(x => !DO_EXEMPLO.includes(x))).size;
+}
+const conta = (code, re) => (code.match(re) || []).length;
+
+/* ============================================================
+   PASSO 2 · AS MISSÕES (a "sol" de cada uma é o código-chave e o ponto de salvamento)
+   ============================================================ */
+const LEVELS = [
+ {
+  "id": "m1",
+  "nome": "Missão 1 · A Base (Bertha Lutz)",
+  "curto": "1",
+  "base": 100,
+  "cient": "<b>👩‍🔬 Bertha Lutz (1894–1976)<\/b><br>Zoóloga, pesquisou anfíbios no Museu Nacional (onde entrou em 1919) e liderou a luta pelo voto feminino, conquistado em 1932.<br><i>Assim como o HTML organiza uma página, Bertha ajudou a organizar um movimento.<\/i>",
+  "hist": "Vamos construir a linha do tempo! Comece pela <b>estrutura semântica<\/b>: tags com significado deixam a página mais leve e acessível.",
+  "conceito": "<p>Tags <b>semânticas<\/b> dizem o que cada parte é: <code>&lt;header&gt;<\/code> cabeçalho, <code>&lt;main&gt;<\/code> conteúdo principal, <code>&lt;section&gt;<\/code> seção, <code>&lt;article&gt;<\/code> um item independente (cada cientista), <code>&lt;time&gt;<\/code> a data.<\/p><p>A base (doctype, head, viewport) já está pronta. Você monta o corpo.<\/p>",
+  "ini": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n<\/head>\n<body>\n  <!-- Missão 1 · Bertha Lutz\n       Monte o esqueleto com tags semânticas: header (com h1), main, section, article, time, h2 e p.\n       A section precisa de class=\"linha\" e id=\"linha\". -->\n\n<\/body>\n<\/html>\n",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n      <article class=\"card\">\n        <time>1919<\/time>\n        <h2>Bertha Lutz<\/h2>\n        <p>Zoóloga e líder do movimento pelo voto feminino.<\/p>\n      <\/article>\n    <\/section>\n  <\/main>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Dentro do body: um header com h1, depois main, e dentro dele a section da linha com um article para a Bertha."
+   ],
+   [
+    "O article leva três filhos: time (o ano), h2 (o nome) e p (o resumo). A section precisa de class=\"linha\" e id=\"linha\"."
+   ],
+   [
+    "Modelo:",
+    "<header><h1>___<\/h1><\/header>\n<main>\n  <section class=\"linha\" id=\"linha\">\n    <article class=\"card\">\n      <time>1919<\/time>\n      <h2>___<\/h2>\n      <p>___<\/p>\n    <\/article>\n  <\/section>\n<\/main>"
+   ]
+  ]
+ },
+ {
+  "id": "m2",
+  "nome": "Missão 2 · O Visual (Nise da Silveira)",
+  "curto": "2",
+  "base": 100,
+  "herda": true,
+  "cient": "<b>👩‍🔬 Nise da Silveira (1905–1999)<\/b><br>Psiquiatra alagoana, recusou eletrochoque e lobotomia e levou pintura e modelagem aos pacientes. Fundou o Museu de Imagens do Inconsciente (1952).<br><i>Cor e forma como cuidado: é o que o CSS faz com a sua página.<\/i>",
+  "hist": "Hora de dar cor e forma à linha do tempo. Use <b>variáveis CSS<\/b> para mudar o visual todo de uma vez.",
+  "conceito": "<p><b>Variáveis CSS<\/b>: <code>:root { --roxo: #7b2cbf; }<\/code> e depois <code>color: var(--roxo);<\/code>.<\/p><ul><li>A linha vertical é uma <code>border-left<\/code><\/li><li>O card ganha <code>padding<\/code>, <code>border-radius<\/code> e <code>box-shadow<\/code><\/li><li><code>font-family: system-ui<\/code> usa a fonte do aparelho: não baixa nada e economiza energia<\/li><\/ul>",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n  <style>\n    :root { --roxo: #7b2cbf; --ambar: #f5a300; --fundo: #faf7fc; --texto: #241a33; }\n    body { margin: 0; font-family: system-ui, sans-serif; background: var(--fundo); color: var(--texto); }\n    header { padding: 28px 16px; text-align: center; background: var(--roxo); color: white; }\n    .linha { max-width: 640px; margin: 24px auto; padding-left: 24px; border-left: 4px solid var(--ambar); }\n    .card { background: white; padding: 16px 20px; margin-bottom: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }\n    .card time { color: var(--roxo); font-weight: bold; }\n  <\/style>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n      <article class=\"card\">\n        <time>1919<\/time>\n        <h2>Bertha Lutz<\/h2>\n        <p>Zoóloga e líder do movimento pelo voto feminino.<\/p>\n      <\/article>\n      <article class=\"card\">\n        <time>1946<\/time>\n        <h2>Nise da Silveira<\/h2>\n        <p>Psiquiatra que humanizou o cuidado com arte.<\/p>\n      <\/article>\n    <\/section>\n  <\/main>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Crie um bloco style no head. Defina as cores em :root como variáveis e use var(--nome) nas regras."
+   ],
+   [
+    "Regras: body (fonte e fundo), header (fundo colorido), .linha (border-left), .card (padding, border-radius, box-shadow). Depois copie o article da Bertha e faça o da Nise."
+   ],
+   [
+    "Modelo:",
+    "<style>\n  :root { --roxo: ___; --ambar: ___; }\n  body { font-family: system-ui, sans-serif; background: ___; }\n  header { background: var(--roxo); color: white; text-align: center; }\n  .linha { border-left: 4px solid var(--ambar); padding-left: 24px; }\n  .card { padding: ___; border-radius: ___; box-shadow: 0 6px 18px rgba(0,0,0,.12); }\n<\/style>"
+   ]
+  ]
+ },
+ {
+  "id": "m3",
+  "nome": "Missão 3 · Os Dados em JavaScript (Johanna Döbereiner)",
+  "curto": "3",
+  "base": 100,
+  "herda": true,
+  "cient": "<b>👩‍🔬 Johanna Döbereiner (1924–2000)<\/b><br>Agrônoma da Embrapa Agrobiologia. Suas pesquisas sobre fixação biológica de nitrogênio permitiram à soja dispensar adubo nitrogenado.<br><i>Ela transformou dados de laboratório em economia para o país. Aqui, os dados viram cards.<\/i>",
+  "hist": "Chega de escrever card por card. Guarde as cientistas em um <b>array de objetos<\/b> e deixe o JavaScript criar o HTML.",
+  "conceito": "<p>Um objeto guarda os dados de uma cientista: <code>{ nome: \"...\", ano: 1919, resumo: \"...\" }<\/code>. Um array guarda vários.<\/p><ul><li><code>.sort((a, b) =&gt; a.ano - b.ano)<\/code> ordena por ano<\/li><li><code>.map(c =&gt; `...${c.nome}...`)<\/code> transforma cada objeto em texto HTML<\/li><li><code>.join(\"\")<\/code> junta tudo e <code>innerHTML<\/code> coloca na página<\/li><\/ul><p><b>Apague os cards escritos à mão<\/b>: agora o JavaScript cria todos.<\/p>",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n  <style>\n    :root { --roxo: #7b2cbf; --ambar: #f5a300; --fundo: #faf7fc; --texto: #241a33; }\n    body { margin: 0; font-family: system-ui, sans-serif; background: var(--fundo); color: var(--texto); }\n    header { padding: 28px 16px; text-align: center; background: var(--roxo); color: white; }\n    .linha { max-width: 640px; margin: 24px auto; padding-left: 24px; border-left: 4px solid var(--ambar); }\n    .card { background: white; padding: 16px 20px; margin-bottom: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }\n    .card time { color: var(--roxo); font-weight: bold; }\n  <\/style>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n    <\/section>\n  <\/main>\n  <script>\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, area: \"Biologia\", resumo: \"Zoóloga e líder do movimento pelo voto feminino.\",\n        fatos: [\"Pesquisou anfíbios no Museu Nacional.\", \"Lutou pelo voto feminino, conquistado em 1932.\"] },\n      { nome: \"Nise da Silveira\", ano: 1946, area: \"Saúde\", resumo: \"Psiquiatra que humanizou o cuidado com arte.\",\n        fatos: [\"Rejeitou eletrochoque e lobotomia.\", \"Fundou o Museu de Imagens do Inconsciente.\"] },\n      { nome: \"Johanna Döbereiner\", ano: 1970, area: \"Agronomia\", resumo: \"Pesquisadora da fixação biológica de nitrogênio.\",\n        fatos: [\"Trabalhou na Embrapa Agrobiologia.\", \"Ajudou a soja a dispensar adubo nitrogenado.\"] },\n      { nome: \"Mayana Zatz\", ano: 1990, area: \"Saúde\", resumo: \"Geneticista de doenças musculares e células-tronco.\",\n        fatos: [\"Lidera o Centro do Genoma Humano da USP.\", \"Faz divulgação científica.\"] }\n    ];\n    const linha = document.getElementById(\"linha\");\n    linha.innerHTML = cientistas\n      .sort((a, b) => a.ano - b.ano)\n      .map(c => `<article class=\"card\"><time>${c.ano}<\/time><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`)\n      .join(\"\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Dentro do body, no fim, crie uma tag script. Declare const cientistas = [ ... ] com pelo menos 3 objetos (nome, ano, area, resumo)."
+   ],
+   [
+    "Pegue a section com document.getElementById(\"linha\") e use innerHTML com o resultado de cientistas.sort(...).map(...).join(\"\")."
+   ],
+   [
+    "Modelo:",
+    "<script>\n  const cientistas = [\n    { nome: \"___\", ano: ___, area: \"___\", resumo: \"___\" },\n    { nome: \"___\", ano: ___, area: \"___\", resumo: \"___\" },\n    { nome: \"___\", ano: ___, area: \"___\", resumo: \"___\" }\n  ];\n  const linha = document.getElementById(\"linha\");\n  linha.innerHTML = cientistas\n    .sort((a, b) => a.ano - b.ano)\n    .map(c => `<article class=\"card\"><time>${c.ano}<\/time><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`)\n    .join(\"\");\n<\/script>"
+   ]
+  ]
+ },
+ {
+  "id": "boss",
+  "nome": "Mini-boss · Caça-bugs de JavaScript",
+  "curto": "⚔",
+  "boss": true,
+  "base": 60,
+  "cient": "<b>🐞 Bugs fazem parte da ciência.<\/b><br>Pesquisadoras também erram, investigam e refazem o experimento. Faça o mesmo: leia a mensagem de erro.",
+  "hist": "Três <b>bugs<\/b> travam esta página. A mensagem de erro (se aparecer) é a sua pista!",
+  "conceito": "<p>Erros comuns em JavaScript:<\/p><ul><li><b>vírgula esquecida<\/b> entre objetos de um array (o código inteiro para!)<\/li><li><code>getElementById<\/code> com um <b>id que não existe<\/b> (resulta em <code>null<\/code>)<\/li><li>nome de propriedade errado (<code>c.name<\/code> em vez de <code>c.nome<\/code>) mostra <code>undefined<\/code><\/li><\/ul>",
+  "ini": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head><meta charset=\"UTF-8\"><title>Caça-bugs<\/title><\/head>\n<body>\n  <section id=\"linha\"><\/section>\n  <script>\n    // Mini-boss: este JavaScript tem 3 bugs. Ache e conserte!\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, resumo: \"Zoóloga e líder do voto feminino.\" }\n      { nome: \"Nise da Silveira\", ano: 1946, resumo: \"Psiquiatra que humanizou o cuidado.\" }\n    ];\n    const caixa = document.getElementById(\"lista\");\n    caixa.innerHTML = cientistas.map(c => `<article class=\"card\"><h2>${c.name}<\/h2><p>${c.resumo}<\/p><\/article>`).join(\"\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head><meta charset=\"UTF-8\"><title>Caça-bugs<\/title><\/head>\n<body>\n  <section id=\"linha\"><\/section>\n  <script>\n    // Mini-boss: este JavaScript tem 3 bugs. Ache e conserte!\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, resumo: \"Zoóloga e líder do voto feminino.\" },\n      { nome: \"Nise da Silveira\", ano: 1946, resumo: \"Psiquiatra que humanizou o cuidado.\" }\n    ];\n    const caixa = document.getElementById(\"linha\");\n    caixa.innerHTML = cientistas.map(c => `<article class=\"card\"><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`).join(\"\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Rode e leia a mensagem em ⚠. Ela diz o tipo de erro. Depois confira o id usado no getElementById e o nome da propriedade."
+   ],
+   [
+    "1) falta uma vírgula entre os dois objetos. 2) o id certo é linha, não lista. 3) a propriedade se chama nome."
+   ],
+   [
+    "Os três consertos:",
+    "{ ... }, <- vírgula\ndocument.getElementById(\"linha\")\n${c.nome}"
+   ]
+  ]
+ },
+ {
+  "id": "m4",
+  "nome": "Missão 4 · Interação (Mayana Zatz)",
+  "curto": "4",
+  "base": 100,
+  "herda": true,
+  "cient": "<b>👩‍🔬 Mayana Zatz<\/b><br>Geneticista da USP, lidera o Centro de Estudos do Genoma Humano e Células-Tronco e pesquisa distrofias musculares. Também faz divulgação científica.<br><i>Divulgar é conversar com o público: sua página agora responde aos cliques.<\/i>",
+  "hist": "Vamos conversar com quem visita: <b>filtros por área<\/b> e uma <b>janela de detalhes<\/b> ao clicar no card.",
+  "conceito": "<ul><li>Botões com <code>data-area=\"Saúde\"<\/code> guardam o filtro. Um <code>addEventListener<\/code> no container ouve todos (delegação).<\/li><li><code>.filter(c =&gt; c.area === area)<\/code> escolhe as cientistas.<\/li><li><code>&lt;dialog&gt;<\/code> é uma janela nativa: <code>showModal()<\/code> abre e <code>close()<\/code> fecha, sem biblioteca.<\/li><\/ul><p>Crie <code>&lt;nav class=\"filtros\" id=\"filtros\"&gt;<\/code> e um <code>&lt;dialog id=\"detalhe\"&gt;<\/code> com um botão.<\/p>",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n  <style>\n    :root { --roxo: #7b2cbf; --ambar: #f5a300; --fundo: #faf7fc; --texto: #241a33; }\n    body { margin: 0; font-family: system-ui, sans-serif; background: var(--fundo); color: var(--texto); }\n    header { padding: 28px 16px; text-align: center; background: var(--roxo); color: white; }\n    .linha { max-width: 640px; margin: 24px auto; padding-left: 24px; border-left: 4px solid var(--ambar); }\n    .card { background: white; padding: 16px 20px; margin-bottom: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }\n    .card time { color: var(--roxo); font-weight: bold; }\n    .filtros { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px; }\n    .filtros button { border: 0; border-radius: 999px; padding: 8px 16px; background: var(--roxo); color: white; cursor: pointer; }\n    .card { cursor: pointer; }\n    dialog { max-width: 460px; border: 0; border-radius: 16px; padding: 20px; }\n  <\/style>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <nav class=\"filtros\" id=\"filtros\"><\/nav>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n    <\/section>\n  <\/main>\n  <dialog id=\"detalhe\">\n    <h2 id=\"dNome\"><\/h2>\n    <ul id=\"dFatos\"><\/ul>\n    <button id=\"fechar\">Fechar<\/button>\n  <\/dialog>\n  <script>\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, area: \"Biologia\", resumo: \"Zoóloga e líder do movimento pelo voto feminino.\",\n        fatos: [\"Pesquisou anfíbios no Museu Nacional.\", \"Lutou pelo voto feminino, conquistado em 1932.\"] },\n      { nome: \"Nise da Silveira\", ano: 1946, area: \"Saúde\", resumo: \"Psiquiatra que humanizou o cuidado com arte.\",\n        fatos: [\"Rejeitou eletrochoque e lobotomia.\", \"Fundou o Museu de Imagens do Inconsciente.\"] },\n      { nome: \"Johanna Döbereiner\", ano: 1970, area: \"Agronomia\", resumo: \"Pesquisadora da fixação biológica de nitrogênio.\",\n        fatos: [\"Trabalhou na Embrapa Agrobiologia.\", \"Ajudou a soja a dispensar adubo nitrogenado.\"] },\n      { nome: \"Mayana Zatz\", ano: 1990, area: \"Saúde\", resumo: \"Geneticista de doenças musculares e células-tronco.\",\n        fatos: [\"Lidera o Centro do Genoma Humano da USP.\", \"Faz divulgação científica.\"] }\n    ];\n    const linha = document.getElementById(\"linha\");\n    const filtros = document.getElementById(\"filtros\");\n    const detalhe = document.getElementById(\"detalhe\");\n    const areas = [\"Todas\", ...new Set(cientistas.map(c => c.area))];\n    filtros.innerHTML = areas.map(a => `<button data-area=\"${a}\">${a}<\/button>`).join(\"\");\n\n    function mostrar(area) {\n      const lista = cientistas.filter(c => area === \"Todas\" || c.area === area);\n      linha.innerHTML = lista\n        .map(c => `<article class=\"card\" data-nome=\"${c.nome}\"><time>${c.ano}<\/time><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`)\n        .join(\"\");\n    }\n    filtros.addEventListener(\"click\", e => { if (e.target.dataset.area) mostrar(e.target.dataset.area); });\n    linha.addEventListener(\"click\", e => {\n      const card = e.target.closest(\".card\");\n      if (!card) return;\n      const c = cientistas.find(x => x.nome === card.dataset.nome);\n      document.getElementById(\"dNome\").textContent = c.nome;\n      document.getElementById(\"dFatos\").innerHTML = c.fatos.map(f => `<li>${f}<\/li>`).join(\"\");\n      detalhe.showModal();\n    });\n    document.getElementById(\"fechar\").onclick = () => detalhe.close();\n    mostrar(\"Todas\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "No HTML, crie nav#filtros (class filtros) e um dialog com título, lista de fatos e botão fechar. No JS, monte os botões a partir das áreas."
+   ],
+   [
+    "Crie a função mostrar(area) que filtra e desenha os cards. Ouça os cliques em filtros (data-area) e em linha (.card). No card, preencha o dialog e chame showModal()."
+   ],
+   [
+    "Modelo:",
+    "filtros.addEventListener(\"click\", e => {\n  if (e.target.dataset.area) mostrar(e.target.dataset.area);\n});\nlinha.addEventListener(\"click\", e => {\n  const card = e.target.closest(\".card\");\n  if (!card) return;\n  // achar a cientista, preencher o dialog...\n  detalhe.showModal();\n});"
+   ]
+  ]
+ },
+ {
+  "id": "m5",
+  "nome": "Missão 5 · A Sua Cientista (chefão final)",
+  "curto": "5",
+  "base": 120,
+  "herda": true,
+  "cient": "<b>🔬 Sua vez de fazer ciência!<\/b><br>Pesquise a cientista que você escolheu (Plataforma Lattes, site da universidade, Fiocruz, Embrapa…). Anote nome, ano de um marco, área, um resumo (40+ letras) e <b>2 fatos<\/b>. Cite a <b>fonte<\/b>.",
+  "hist": "Última missão de conteúdo: acrescente <b>a cientista que você pesquisou<\/b> ao array e veja o card dela funcionar com filtro e detalhes.",
+  "conceito": "<p>Adicione um objeto novo ao array <code>cientistas<\/code>, com estas propriedades:<\/p><p><code>nome<\/code>, <code>ano<\/code> (número), <code>area<\/code>, <code>resumo<\/code>, <code>fatos<\/code> (array com 2 ou mais frases) e <code>fonte<\/code> (de onde veio a informação).<\/p><p>Não esqueça a vírgula entre os objetos!<\/p>",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n  <style>\n    :root { --roxo: #7b2cbf; --ambar: #f5a300; --fundo: #faf7fc; --texto: #241a33; }\n    body { margin: 0; font-family: system-ui, sans-serif; background: var(--fundo); color: var(--texto); }\n    header { padding: 28px 16px; text-align: center; background: var(--roxo); color: white; }\n    .linha { max-width: 640px; margin: 24px auto; padding-left: 24px; border-left: 4px solid var(--ambar); }\n    .card { background: white; padding: 16px 20px; margin-bottom: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }\n    .card time { color: var(--roxo); font-weight: bold; }\n    .filtros { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px; }\n    .filtros button { border: 0; border-radius: 999px; padding: 8px 16px; background: var(--roxo); color: white; cursor: pointer; }\n    .card { cursor: pointer; }\n    dialog { max-width: 460px; border: 0; border-radius: 16px; padding: 20px; }\n  <\/style>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <nav class=\"filtros\" id=\"filtros\"><\/nav>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n    <\/section>\n  <\/main>\n  <dialog id=\"detalhe\">\n    <h2 id=\"dNome\"><\/h2>\n    <ul id=\"dFatos\"><\/ul>\n    <button id=\"fechar\">Fechar<\/button>\n  <\/dialog>\n  <script>\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, area: \"Biologia\", resumo: \"Zoóloga e líder do movimento pelo voto feminino.\",\n        fatos: [\"Pesquisou anfíbios no Museu Nacional.\", \"Lutou pelo voto feminino, conquistado em 1932.\"] },\n      { nome: \"Nise da Silveira\", ano: 1946, area: \"Saúde\", resumo: \"Psiquiatra que humanizou o cuidado com arte.\",\n        fatos: [\"Rejeitou eletrochoque e lobotomia.\", \"Fundou o Museu de Imagens do Inconsciente.\"] },\n      { nome: \"Johanna Döbereiner\", ano: 1970, area: \"Agronomia\", resumo: \"Pesquisadora da fixação biológica de nitrogênio.\",\n        fatos: [\"Trabalhou na Embrapa Agrobiologia.\", \"Ajudou a soja a dispensar adubo nitrogenado.\"] },\n      { nome: \"Mayana Zatz\", ano: 1990, area: \"Saúde\", resumo: \"Geneticista de doenças musculares e células-tronco.\",\n        fatos: [\"Lidera o Centro do Genoma Humano da USP.\", \"Faz divulgação científica.\"] }\n      ,{ nome: \"Sonia Guimarães\", ano: 1989, area: \"Física\", resumo: \"Primeira mulher negra brasileira doutora em Física.\",\n        fonte: \"Pesquisa da turma\", fatos: [\"Professora do ITA.\", \"Pesquisa sensores infravermelhos.\"] }\n    ];\n    const linha = document.getElementById(\"linha\");\n    const filtros = document.getElementById(\"filtros\");\n    const detalhe = document.getElementById(\"detalhe\");\n    const areas = [\"Todas\", ...new Set(cientistas.map(c => c.area))];\n    filtros.innerHTML = areas.map(a => `<button data-area=\"${a}\">${a}<\/button>`).join(\"\");\n\n    function mostrar(area) {\n      const lista = cientistas.filter(c => area === \"Todas\" || c.area === area);\n      linha.innerHTML = lista\n        .map(c => `<article class=\"card\" data-nome=\"${c.nome}\"><time>${c.ano}<\/time><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`)\n        .join(\"\");\n    }\n    filtros.addEventListener(\"click\", e => { if (e.target.dataset.area) mostrar(e.target.dataset.area); });\n    linha.addEventListener(\"click\", e => {\n      const card = e.target.closest(\".card\");\n      if (!card) return;\n      const c = cientistas.find(x => x.nome === card.dataset.nome);\n      document.getElementById(\"dNome\").textContent = c.nome;\n      document.getElementById(\"dFatos\").innerHTML = c.fatos.map(f => `<li>${f}<\/li>`).join(\"\");\n      detalhe.showModal();\n    });\n    document.getElementById(\"fechar\").onclick = () => detalhe.close();\n    mostrar(\"Todas\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Copie um objeto do array, cole ao final (com vírgula antes) e troque os dados pelos da sua pesquisa."
+   ],
+   [
+    "Acrescente a propriedade fonte: \"Plataforma Lattes\" (ou o site que você usou). Os fatos vão dentro de colchetes, separados por vírgula."
+   ],
+   [
+    "Modelo:",
+    "{ nome: \"___\", ano: ___, area: \"___\",\n  resumo: \"___ (pelo menos 40 letras)\",\n  fonte: \"___\",\n  fatos: [\"___\", \"___\"] }"
+   ]
+  ]
+ },
+ {
+  "id": "m6",
+  "nome": "Missão 6 · Página Leve (bônus)",
+  "curto": "🔋",
+  "base": 80,
+  "herda": true,
+  "cient": "<b>🔋 Ciência também cuida do planeta.<\/b><br>Cada arquivo baixado, cada fonte externa e cada animação contínua gasta dados, processamento e energia. Páginas leves gastam menos.",
+  "hist": "Alguns <b>vilões da energia<\/b> invadiram a sua página: uma fonte externa e uma animação infinita. Elimine todos e meça o peso.",
+  "conceito": "<ul><li><b>Sem recursos externos<\/b>: cada <code>&lt;link&gt;<\/code> para fora é uma nova requisição.<\/li><li><b>Fonte do sistema<\/b>: <code>font-family: system-ui, sans-serif<\/code>.<\/li><li><b>Sem animação infinita<\/b> (<code>infinite<\/code>).<\/li><li><code>@media (prefers-reduced-motion: reduce)<\/code> respeita quem prefere menos movimento.<\/li><li>Imagens (se houver): <code>loading=\"lazy\"<\/code> e tamanho pequeno.<\/li><li><b>Peso<\/b> da página: meta de até 20 KB.<\/li><\/ul>",
+  "sol": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Cientistas Brasileiras<\/title>\n  <style>\n    :root { --roxo: #7b2cbf; --ambar: #f5a300; --fundo: #faf7fc; --texto: #241a33; }\n    body { margin: 0; font-family: system-ui, sans-serif; background: var(--fundo); color: var(--texto); }\n    header { padding: 28px 16px; text-align: center; background: var(--roxo); color: white; }\n    .linha { max-width: 640px; margin: 24px auto; padding-left: 24px; border-left: 4px solid var(--ambar); }\n    .card { background: white; padding: 16px 20px; margin-bottom: 20px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }\n    .card time { color: var(--roxo); font-weight: bold; }\n    .filtros { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px; }\n    .filtros button { border: 0; border-radius: 999px; padding: 8px 16px; background: var(--roxo); color: white; cursor: pointer; }\n    .card { cursor: pointer; }\n    dialog { max-width: 460px; border: 0; border-radius: 16px; padding: 20px; }\n    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }\n  <\/style>\n<\/head>\n<body>\n  <header>\n    <h1>Cientistas Brasileiras<\/h1>\n    <p>Ciência Delas · SNCT 2026<\/p>\n  <\/header>\n  <nav class=\"filtros\" id=\"filtros\"><\/nav>\n  <main>\n    <section class=\"linha\" id=\"linha\">\n    <\/section>\n  <\/main>\n  <dialog id=\"detalhe\">\n    <h2 id=\"dNome\"><\/h2>\n    <ul id=\"dFatos\"><\/ul>\n    <button id=\"fechar\">Fechar<\/button>\n  <\/dialog>\n  <script>\n    const cientistas = [\n      { nome: \"Bertha Lutz\", ano: 1919, area: \"Biologia\", resumo: \"Zoóloga e líder do movimento pelo voto feminino.\",\n        fatos: [\"Pesquisou anfíbios no Museu Nacional.\", \"Lutou pelo voto feminino, conquistado em 1932.\"] },\n      { nome: \"Nise da Silveira\", ano: 1946, area: \"Saúde\", resumo: \"Psiquiatra que humanizou o cuidado com arte.\",\n        fatos: [\"Rejeitou eletrochoque e lobotomia.\", \"Fundou o Museu de Imagens do Inconsciente.\"] },\n      { nome: \"Johanna Döbereiner\", ano: 1970, area: \"Agronomia\", resumo: \"Pesquisadora da fixação biológica de nitrogênio.\",\n        fatos: [\"Trabalhou na Embrapa Agrobiologia.\", \"Ajudou a soja a dispensar adubo nitrogenado.\"] },\n      { nome: \"Mayana Zatz\", ano: 1990, area: \"Saúde\", resumo: \"Geneticista de doenças musculares e células-tronco.\",\n        fatos: [\"Lidera o Centro do Genoma Humano da USP.\", \"Faz divulgação científica.\"] }\n      ,{ nome: \"Sonia Guimarães\", ano: 1989, area: \"Física\", resumo: \"Primeira mulher negra brasileira doutora em Física.\",\n        fonte: \"Pesquisa da turma\", fatos: [\"Professora do ITA.\", \"Pesquisa sensores infravermelhos.\"] }\n    ];\n    const linha = document.getElementById(\"linha\");\n    const filtros = document.getElementById(\"filtros\");\n    const detalhe = document.getElementById(\"detalhe\");\n    const areas = [\"Todas\", ...new Set(cientistas.map(c => c.area))];\n    filtros.innerHTML = areas.map(a => `<button data-area=\"${a}\">${a}<\/button>`).join(\"\");\n\n    function mostrar(area) {\n      const lista = cientistas.filter(c => area === \"Todas\" || c.area === area);\n      linha.innerHTML = lista\n        .map(c => `<article class=\"card\" data-nome=\"${c.nome}\"><time>${c.ano}<\/time><h2>${c.nome}<\/h2><p>${c.resumo}<\/p><\/article>`)\n        .join(\"\");\n    }\n    filtros.addEventListener(\"click\", e => { if (e.target.dataset.area) mostrar(e.target.dataset.area); });\n    linha.addEventListener(\"click\", e => {\n      const card = e.target.closest(\".card\");\n      if (!card) return;\n      const c = cientistas.find(x => x.nome === card.dataset.nome);\n      document.getElementById(\"dNome\").textContent = c.nome;\n      document.getElementById(\"dFatos\").innerHTML = c.fatos.map(f => `<li>${f}<\/li>`).join(\"\");\n      detalhe.showModal();\n    });\n    document.getElementById(\"fechar\").onclick = () => detalhe.close();\n    mostrar(\"Todas\");\n  <\/script>\n<\/body>\n<\/html>\n",
+  "dicas": [
+   [
+    "Procure no código: um link para fonts.googleapis.com, a fonte \"Poppins\" e um animation com infinite. Todos precisam sair."
+   ],
+   [
+    "Troque a fonte por system-ui, sans-serif. Apague o link externo, a regra animation e o @keyframes. Acrescente a media query prefers-reduced-motion."
+   ],
+   [
+    "Modelo:",
+    "body { font-family: system-ui, sans-serif; }\n@media (prefers-reduced-motion: reduce) {\n  * { animation: none !important; transition: none !important; }\n}"
+   ]
+  ]
+ }
+];
+
+const EXEMPLO = ["Bertha Lutz", "Nise da Silveira", "Johanna Döbereiner", "Mayana Zatz"];
+const autoraOk = x => !EXEMPLO.includes(x.nome) && (!S.autora || nrm(x.nome).includes(nrm(S.autora)) || nrm(S.autora).includes(nrm(x.nome)));   // é a cientista que o aluno escolheu?
+const dados = c => { try { return c.w.eval("typeof cientistas !== 'undefined' ? cientistas : null"); } catch(e){ return null; } };
+const cards = c => [...c.d.querySelectorAll("#linha .card")];
+const scripts = c => [...c.d.querySelectorAll("script")].map(s => s.textContent).join("\n");
+const estilos = c => [...c.d.querySelectorAll("style")].map(s => s.textContent).join("\n");
+const anos = c => cards(c).map(k => +T(k.querySelector("time")));
+const CHECKS = {
+ m1: [
+  ["Crie um <header> com um <h1> (título da página)", c => T(c.d.querySelector("header h1")).length > 3],
+  ["Crie <main> com <section class=\"linha\" id=\"linha\">", c => !!c.d.querySelector("main section.linha#linha")],
+  ["Dentro da linha, crie um <article class=\"card\">", c => !!c.d.querySelector("section.linha article.card")],
+  ["Coloque o ano da cientista em um <time> (4 números)", c => /^\d{4}$/.test(T(c.d.querySelector(".card time")))],
+  ["Escreva o nome dela em um <h2>", c => T(c.d.querySelector(".card h2")).length > 4],
+  ["Escreva um resumo em um <p> (20+ letras)", c => T(c.d.querySelector(".card p")).length >= 20]],
+ m2: [
+  ["Crie variáveis CSS em :root (--nome: valor)", c => [...c.d.querySelectorAll("style")].some(s => /:root\s*\{[^}]*--[\w-]+\s*:/s.test(s.textContent))],
+  ["Use pelo menos uma variável com var(--nome)", c => /var\(--/.test(estilos(c))],
+  ["body com font-family e cor de fundo", c => (/font-family\s*:/.test(estilos(c)) || !!decl(c, "body", "font-family")) && (cs(c, c.d.body, "background-color") !== "rgba(0, 0, 0, 0)" || /body\s*\{[^}]*background(?:-color)?\s*:/s.test(estilos(c)))],
+  ["O <header> com cor de fundo e texto centralizado", c => { const h = c.d.querySelector("header"); return !!h && cs(c, h, "background-color") !== "rgba(0, 0, 0, 0)" && cs(c, h, "text-align") === "center"; }],
+  ["A .linha com uma borda vertical à esquerda (border-left)", c => { const l = c.d.querySelector(".linha"); return !!l && cs(c, l, "border-left-style") !== "none" && parseFloat(cs(c, l, "border-left-width")) >= 2; }],
+  ["O .card com padding, border-radius e box-shadow", c => { const k = c.d.querySelector(".card"); return !!k && cs(c, k, "padding-top") !== "0px" && rad(c, k) !== "0px" && cs(c, k, "box-shadow") !== "none"; }],
+  ["Acrescente o 2º card (Nise da Silveira)", c => c.d.querySelectorAll(".card").length >= 2]],
+ m3: [
+  ["Declare const cientistas = [ ... ] com pelo menos 3 cientistas", c => { const d = dados(c); return !!d && d.length >= 3; }],
+  ["Cada objeto tem nome, ano (número) e resumo", c => { const d = dados(c); return !!d && d.length > 0 && d.every(x => x.nome && typeof x.ano === "number" && x.resumo); }],
+  ["Apague os cards escritos à mão: o JavaScript cria todos", c => conta(c.code.replace(/<script[\s\S]*?<\/script>/gi, ""), /<article/gi) === 0],
+  ["Gere os cards com map (ou forEach) e template literal (crase)", c => /\.(map|forEach)\(/.test(scripts(c)) && scripts(c).includes("`")],
+  ["Os cards aparecem na tela (3 ou mais em #linha)", c => cards(c).length >= 3],
+  ["Ordene por ano com sort: a linha do tempo cresce no tempo", c => { const a = anos(c); return a.length >= 3 && a.every((v, i) => i === 0 || v >= a[i - 1]); }]],
+ boss: [
+  ["Sem erros no JavaScript (a mensagem ⚠ dá a pista)", c => (c.erros || []).length === 0],
+  ["O JavaScript acha a caixa certa e cria os cards", c => cards(c).length >= 2],
+  ["Os nomes aparecem (nada de undefined)", c => { const t = T(c.d.getElementById("linha")); return t.includes("Bertha") && !t.includes("undefined"); }]],
+ m4: [
+  ["Crie botões com data-area dentro de <nav class=\"filtros\"> (Todas + áreas)", c => c.d.querySelectorAll(".filtros button[data-area]").length >= 3],
+  ["Clicar em uma área mostra só as cientistas dela", c => { const t = cards(c).length, b = [...c.d.querySelectorAll("button[data-area]")].find(x => x.dataset.area !== "Todas"); if(!b) return false; b.click(); const n = cards(c).length; return n > 0 && n < t; }],
+  ["O botão Todas mostra todas de novo", c => { const b = [...c.d.querySelectorAll("button[data-area]")].find(x => x.dataset.area === "Todas"); if(!b) return false; b.click(); return cards(c).length >= 3; }],
+  ["Crie um <dialog> e abra com showModal() ao clicar em um card", c => { const k = cards(c)[0], dlg = c.d.querySelector("dialog"); if(!k || !dlg) return false; k.click(); const ok = dlg.open; if(dlg.open) dlg.close(); return ok; }],
+  ["A janela mostra o nome da cientista clicada", c => { const k = cards(c)[0], dlg = c.d.querySelector("dialog"); if(!k || !dlg) return false; k.click(); const ok = dlg.textContent.includes(T(k.querySelector("h2"))); if(dlg.open) dlg.close(); return ok; }],
+  ["Um botão dentro do <dialog> fecha a janela (close())", c => { const k = cards(c)[0], dlg = c.d.querySelector("dialog"); if(!k || !dlg) return false; k.click(); const abriu = dlg.open, b = dlg.querySelector("button"); if(!b) return false; b.click(); return abriu && !dlg.open; }]],
+ m5: [
+  ["Acrescente ao array a cientista que você escolheu (ela não está no exemplo)", c => { const d = dados(c); return !!d && d.some(x => autoraOk(x)); }],
+  ["Preencha nome, ano (número), area e um resumo com 40+ letras", c => { const d = dados(c); return !!d && d.some(x => autoraOk(x) && x.nome && typeof x.ano === "number" && x.area && (x.resumo || "").length >= 40); }],
+  ["Escreva pelo menos 2 fatos no array fatos", c => { const d = dados(c); return !!d && d.some(x => autoraOk(x) && Array.isArray(x.fatos) && x.fatos.filter(f => (f || "").length > 5).length >= 2); }],
+  ["Cite a fonte da pesquisa (propriedade fonte)", c => { const d = dados(c); return !!d && d.some(x => autoraOk(x) && (x.fonte || "").length > 3); }],
+  ["O card dela aparece na linha do tempo", c => { const d = dados(c); const n = d && d.find(x => autoraOk(x)); return !!n && cards(c).some(k => T(k.querySelector("h2")) === n.nome); }],
+  ["Ao clicar no card dela, os fatos aparecem na janela", c => { const d = dados(c); const n = d && d.find(x => autoraOk(x)); const k = n && cards(c).find(x => T(x.querySelector("h2")) === n.nome), dlg = c.d.querySelector("dialog"); if(!k || !dlg || !n.fatos) return false; k.click(); const ok = dlg.textContent.includes(n.fatos[0]); if(dlg.open) dlg.close(); return ok; }]],
+ m6: [
+  ["Peso do arquivo de até 20 KB", c => new Blob([c.raw]).size <= 20480],
+  ["Sem recursos externos (nada de link ou script para fora)", c => !c.d.querySelector("link[href^='http'], link[href^='//'], script[src^='http']") && !/@import/.test(estilos(c))],
+  ["Use a fonte do sistema (system-ui) no body", c => /system-ui/.test(decl(c, "body", "font-family"))],
+  ["Sem animação infinita (remova o infinite)", c => !/infinite/.test(estilos(c))],
+  ["Respeite quem prefere menos movimento (prefers-reduced-motion)", c => /prefers-reduced-motion/.test(estilos(c))],
+  ["Se houver imagens, use loading=\"lazy\"", c => [...c.d.querySelectorAll("img")].every(i => i.getAttribute("loading") === "lazy")]]
+};
+const LV = LEVELS.map(L => ({...L, checks: CHECKS[L.id]}));
+const M5 = LV.find(l => l.id === "m5");
+M5.solFor = () => M5.sol.replace(/\{ nome: "Sonia Guimarães"[\s\S]*?\] \}/, `{ nome: "${S.autora || "Nome da cientista"}", ano: 2000, area: "Ciências", resumo: "Pesquisadora brasileira. Troque este texto pelo resumo da sua pesquisa.", fonte: "Pesquisa da turma", fatos: ["Troque pelo primeiro fato.", "Troque pelo segundo fato."] }`);
+LV.find(l => l.id === "m6").vilao = code => code
+  .replace("</title>", "</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Poppins&display=swap\" rel=\"stylesheet\">")
+  .replace(/font-family:\s*system-ui,\s*sans-serif/, "font-family: \"Poppins\", sans-serif")
+  .replace("  </style>", "    .card { animation: pulsa 1.2s infinite; }\n    @keyframes pulsa { 50% { transform: scale(1.03); } }\n  </style>");
+
+/* ============================================================
+   PASSO 3 · ESTADO DO JOGO (salvo no navegador)
+   ============================================================ */
+const AUTORAS = [{"n":"Márcia Barbosa","a":"Física","r":"Sul"},{"n":"Thaisa Bergmann","a":"Física","r":"Sul"},{"n":"Zilda Arns","a":"Saúde","r":"Sul"},{"n":"Carolina Bori","a":"Ciências Sociais","r":"Sudeste"},{"n":"Beatriz Barbuy","a":"Física","r":"Sudeste"},{"n":"Suzana Herculano-Houzel","a":"Saúde","r":"Sudeste"},{"n":"Ester Sabino","a":"Saúde","r":"Sudeste"},{"n":"Margareth Dalcolmo","a":"Saúde","r":"Sudeste"},{"n":"Nísia Trindade Lima","a":"Ciências Sociais","r":"Sudeste"},{"n":"Natalia Pasternak","a":"Biologia","r":"Sudeste"},{"n":"Débora Diniz","a":"Ciências Sociais","r":"Centro-Oeste"},{"n":"Nágila Maria Ricardo","a":"Química","r":"Nordeste"},{"n":"Ticiana Linhares","a":"Computação","r":"Nordeste"},{"n":"Rafaela Camargo","a":"Biologia","r":"Nordeste"},{"n":"Rute Anacé","a":"Ciências Sociais","r":"Nordeste"},{"n":"Maria Teresa Piedade","a":"Biologia","r":"Norte"},{"n":"Lia Zanotta Machado","a":"Ciências Sociais","r":"Centro-Oeste"},{"n":"Carolina Araujo","a":"Matemática","r":"Sudeste"},{"n":"Belita Koiller","a":"Física","r":"Sudeste"},{"n":"Daniela Lazzaro","a":"Física","r":"Sudeste"},{"n":"Lucia Mendonça Previato","a":"Saúde","r":"Sudeste"},{"n":"Cláudia Bauzer Medeiros","a":"Computação","r":"Sudeste"},{"n":"Vanderlan Bolzani","a":"Química","r":"Sudeste"},{"n":"Lygia da Veiga Pereira","a":"Saúde","r":"Sudeste"},{"n":"Marta Vannucci","a":"Biologia","r":"Sudeste"},{"n":"Liedi Bernucci","a":"Engenharia","r":"Sudeste"},{"n":"Carla Freitas","a":"Computação","r":"Sul"},{"n":"Lélia Gonzalez","a":"Ciências Sociais","r":"Sudeste"},{"n":"Heleieth Saffioti","a":"Ciências Sociais","r":"Sudeste"},{"n":"Mariza Peirano","a":"Ciências Sociais","r":"Centro-Oeste"},{"n":"Mercedes Bustamante","a":"Biologia","r":"Centro-Oeste"},{"n":"Joana Maria Pedro","a":"Ciências Sociais","r":"Sul"},{"n":"Tânia Bacelar","a":"Ciências Sociais","r":"Nordeste"},{"n":"Ima Vieira","a":"Biologia","r":"Norte"},{"n":"Emilie Snethlage","a":"Biologia","r":"Norte"},{"n":"Graziela Barroso","a":"Biologia","r":"Sudeste"},{"n":"Ruth Nussenzweig","a":"Saúde","r":"Sudeste"},{"n":"Sonia Guimarães","a":"Física","r":"Sudeste"},{"n":"Fernanda Staniscuaski","a":"Biologia","r":"Sul"},{"n":"Jaqueline Goes de Jesus","a":"Saúde","r":"Nordeste"}];   // cientistas sugeridas para pesquisar (n = nome, a = área, r = região)
+const CHAVE = "cienciaDelas_oficina_v1";
+let S = null;
+try { S = JSON.parse(localStorage.getItem(CHAVE)); } catch(e){}
+if(!S) S = {nome:"", cur:0, xp:0, done:{}, codes:{}, pass:{}, lv:{}, selos:{}, inicio:0, fim:0, instr:false};
+const nrm = t => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const salvar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch(e){} };
+const stat = () => S.lv[LV[S.cur].id] || (S.lv[LV[S.cur].id] = {dicas:0, tent:0, salv:false});
+const liberado = () => { let k = 0; while(k < LV.length && S.done[LV[k].id] != null) k++; return Math.min(k, LV.length - 1); };
+
+/* ============================================================
+   PASSO 4 · EDITOR (colorido, com números de linha)
+   ============================================================ */
+const ed = $("#ed"), pre = $("#pre"), gut = $("#gut"), fr = $("#fr");
+function realce(src){
+  return esc(src).replace(/(&lt;!--[\s\S]*?--&gt;)|(&lt;\/?[a-zA-Z!][\s\S]*?&gt;)|(\/\*[\s\S]*?\*\/)|([a-z-]+)(\s*:)(?=[^{}\n<]*;)|(#[0-9a-fA-F]{3,8}\b)|(\b(?:const|let|function|return|if|else)\b)|("[^"\n]*")/g,
+    (m, com, tag, ccom, prop, col, hex, kw, str) => {
+      if(com || ccom) return `<i class="c">${com || ccom}</i>`;
+      if(tag) return tag.replace(/([\w-]+)(=)("[^"]*"|'[^']*')/g, '<b class="a">$1</b>$2<b class="s">$3</b>').replace(/^(&lt;\/?!?)([\w-]+)/, '$1<b class="t">$2</b>');
+      if(prop) return `<b class="p">${prop}</b>${col}`;
+      if(kw) return `<b class="t">${kw}</b>`;
+      if(str) return `<b class="s">${str}</b>`;
+      return `<b class="h">${hex}</b>`;
+    });
+}
+function pintar(){
+  pre.innerHTML = realce(ed.value) + "\n";
+  gut.textContent = Array.from({length: ed.value.split("\n").length}, (_, i) => i + 1).join("\n");
+  sync();
+}
+function sync(){ pre.scrollTop = gut.scrollTop = ed.scrollTop; pre.scrollLeft = ed.scrollLeft; }
+ed.addEventListener("scroll", sync);
+ed.addEventListener("input", e => {
+  pintar(); S.codes[LV[S.cur].id] = ed.value; salvar(); clearTimeout(ed.t); ed.t = setTimeout(prever, 450);
+  if(emProg) return;
+  if(/^insert/.test(e.inputType || "") && e.inputType !== "insertLineBreak") atualizarSug(); else fecharSug();   // só sugere enquanto a pessoa digita
+});
+/* o teclado do editor (Tab, Enter, setas) está no PASSO 4b */
+
+/* ============================================================
+   PASSO 4b · ASSISTENTE DO EDITOR (parecido com o VS Code)
+   • fecha tags, aspas e parênteses sozinho   • sugere tags, atributos, CSS e JavaScript
+   • Tab expande atalhos (Emmet): p, ul.lista, a, !   • Ctrl + Espaço mostra as sugestões
+   ============================================================ */
+const VAZIAS = ["area","base","br","col","embed","hr","img","input","link","meta","source","track","wbr"];
+const TAGS = {
+a:"link", abbr:"abreviação", address:"contato/endereço", area:"área de imagem", article:"artigo independente",
+aside:"conteúdo lateral", audio:"áudio", b:"negrito", base:"URL base", bdi:"texto isolado", bdo:"direção do texto",
+blockquote:"citação longa", body:"conteúdo visível", br:"quebra de linha", button:"botão", canvas:"desenho", caption:"legenda de tabela",
+cite:"obra citada", code:"código", col:"coluna", colgroup:"grupo de colunas", data:"dado", datalist:"lista de opções",
+dd:"descrição", del:"texto removido", details:"detalhes expansíveis", dfn:"termo definido", dialog:"janela",
+div:"caixa genérica", dl:"lista de definições", dt:"termo", em:"ênfase", embed:"conteúdo incorporado",
+fieldset:"grupo de formulário", figcaption:"legenda da figura", figure:"figura", footer:"rodapé", form:"formulário",
+h1:"título principal", h2:"subtítulo", h3:"título nível 3", h4:"título nível 4", h5:"título nível 5", h6:"título nível 6",
+head:"metadados da página", header:"cabeçalho", hgroup:"grupo de títulos", hr:"linha horizontal", html:"raiz do documento",
+i:"itálico", iframe:"página incorporada", img:"imagem", input:"campo de entrada", ins:"texto inserido",
+kbd:"tecla", label:"rótulo", legend:"legenda do grupo", li:"item de lista", link:"referência a arquivo",
+main:"conteúdo principal", map:"mapa de imagem", mark:"texto destacado", menu:"menu", meta:"metadados",
+meter:"medidor", nav:"navegação", noscript:"alternativa sem JavaScript", object:"objeto incorporado",
+ol:"lista numerada", optgroup:"grupo de opções", option:"opção", output:"resultado", p:"parágrafo",
+picture:"imagem responsiva", pre:"texto pré-formatado", progress:"progresso", q:"citação curta",
+rp:"alternativa ruby", rt:"texto ruby", ruby:"anotação ruby", s:"texto não relevante", samp:"saída de programa",
+script:"JavaScript", search:"área de busca", section:"seção", select:"lista de seleção", slot:"slot",
+small:"texto pequeno", source:"fonte de mídia", span:"trecho genérico", strong:"destaque forte",
+style:"CSS", sub:"subscrito", summary:"resumo de details", sup:"sobrescrito", table:"tabela", tbody:"corpo da tabela",
+td:"célula", template:"modelo HTML", textarea:"área de texto", tfoot:"rodapé da tabela", th:"célula de cabeçalho",
+thead:"cabeçalho da tabela", time:"data/hora", title:"título da aba", tr:"linha da tabela", track:"legenda de mídia",
+u:"texto marcado", ul:"lista", var:"variável", video:"vídeo", wbr:"quebra possível"
+};
+const ATTRS_TAG = {a:["href","target","rel"],img:["src","alt","width","height","loading"],link:["rel","href"],meta:["charset","name","content"],script:["src"],input:["type","placeholder","value"],button:["type"],time:["datetime"],html:["lang"],label:["for"]};
+const ATTRS_GLOBAL = ["class","id","style","title","hidden","data-"];
+const VALORES_ATTR = {target:["_blank","_self"],rel:["stylesheet","noopener"],loading:["lazy","eager"],type:["button","text","submit","search"],lang:["pt-BR"],charset:["UTF-8"],name:["viewport"],content:["width=device-width, initial-scale=1"]};
+const CSS_PROPS = [
+"accent-color","align-content","align-items","align-self","animation","appearance","aspect-ratio","backdrop-filter",
+"background","background-color","background-image","background-position","background-repeat","background-size",
+"border","border-bottom","border-bottom-color","border-bottom-left-radius","border-bottom-right-radius","border-bottom-style","border-bottom-width",
+"border-collapse","border-color","border-left","border-radius","border-right","border-spacing","border-style","border-top","border-width",
+"box-shadow","box-sizing","color","column-gap","cursor","display","filter","flex","flex-basis","flex-direction","flex-flow","flex-grow",
+"flex-shrink","flex-wrap","float","font","font-family","font-size","font-style","font-weight","gap","grid-template-columns",
+"grid-template-rows","height","justify-content","left","letter-spacing","line-height","list-style","margin","margin-bottom",
+"margin-left","margin-right","margin-top","max-height","max-width","min-height","min-width","object-fit","opacity","order",
+"outline","overflow","overflow-x","overflow-y","padding","padding-bottom","padding-left","padding-right","padding-top",
+"pointer-events","position","right","text-align","text-decoration","text-overflow","text-shadow","text-transform","top",
+"transform","transform-origin","transition","user-select","vertical-align","visibility","white-space","width","z-index"
+];
+const CSS_VALS = {display:["block","flex","grid","none","inline-block"],"text-align":["center","left","right"],"font-family":["system-ui, sans-serif","Arial, sans-serif","Georgia, serif"],cursor:["pointer","default"],position:["relative","absolute","fixed","sticky"],"list-style":["none"],"text-decoration":["none","underline"],"justify-content":["center","space-between","flex-start"],"align-items":["center","flex-start"],"flex-direction":["row","column"],"flex-wrap":["wrap"],"font-weight":["bold","normal"],overflow:["hidden","auto"],border:["none","1px solid","4px solid"],"box-shadow":["0 6px 18px rgba(0, 0, 0, 0.12)"],transition:["0.3s","all 0.3s ease"],"border-radius":["50%","12px","16px"],"background-color":["white","transparent"],color:["white","black"],margin:["0 auto","0"],padding:["16px","0"],width:["100%","80%"],"max-width":["640px","100%"],gap:["8px","16px"],opacity:["0","1"]};
+const JS_PALAVRAS = ["const","let","var","function","return","if","else","for","while","of","in","new","class","try","catch","finally","throw","async","await","import","export","true","false","null","undefined","document","window","console","Math","JSON","Array","Object","String","Number"];
+const JS_SNIPS = [["function","function nome() {\n  |\n}","função"],["for","for (const c of |) {\n  \n}","repete para cada item"],["if","if (|) {\n  \n}","condição"],["console.log","console.log(|)","mostra no console"]];
+const JS_MEM = [["getElementById","getElementById(\"|\")","pega pelo id"],["querySelector","querySelector(\"|\")","pega pelo seletor"],["querySelectorAll","querySelectorAll(\"|\")","pega todos"],["addEventListener","addEventListener(\"click\", e => {\n  |\n})","ouve um evento"],["innerHTML","innerHTML = |","HTML de dentro"],["textContent","textContent = |","texto de dentro"],["map","map(c => `|`)","transforma cada item"],["filter","filter(c => |)","escolhe itens"],["sort","sort((a, b) => a.ano - b.ano)","ordena por ano"],["find","find(c => |)","acha um item"],["forEach","forEach(c => {\n  |\n})","percorre os itens"],["join","join(\"\")","junta em texto"],["includes","includes(|)","contém?"],["push","push(|)","adiciona ao array"],["length","length","tamanho"],["classList","classList.add(\"|\")","classes do elemento"],["dataset","dataset.|","atributos data-"],["closest","closest(\"|\")","pai mais próximo"],["showModal","showModal()","abre o dialog"],["close","close()","fecha o dialog"],["click","click()","clica"]];
+const ICONE = {t:"‹›", a:"@", c:"{}", v:"=", j:"ƒ", w:"abc", e:"⚡"};
+let emProg = false, sugItens = [], sugSel = 0, sugR = [0, 0], sugNav = false;
+const sug = $("#sug");
+
+// onde o cursor está? html (texto), tag (dentro de <...>), css, js ou com (comentário)
+function ctx(t){
+  if(t.lastIndexOf("<!--") > t.lastIndexOf("-->")) return "com";
+  const ss = t.lastIndexOf("<script"), ts = t.lastIndexOf("<style");
+  if(ss > t.lastIndexOf("</script") && t.indexOf(">", ss) !== -1) return "js";
+  if(ts > t.lastIndexOf("</style") && t.indexOf(">", ts) !== -1) return "css";
+  return t.lastIndexOf("<") > t.lastIndexOf(">") ? "tag" : "html";
+}
+const recuoDe = t => (t.split("\n").pop().match(/^\s*/) || [""])[0];
+// cola um texto mantendo o "desfazer" (Ctrl + Z) do navegador
+function colar(txt, a, b, cursor){
+  emProg = true; ed.focus(); ed.setSelectionRange(a, b);
+  if(!document.execCommand("insertText", false, txt)){ ed.setRangeText(txt, a, b, "end"); ed.dispatchEvent(new Event("input")); }
+  if(cursor != null) ed.setSelectionRange(cursor, cursor);
+  emProg = false;
+}
+// nome da tag aberta mais próxima (para completar </ )
+function tagAberta(t){
+  const limpo = t.replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style)[\s\S]*?<\/\1>/gi, ""), pilha = [];
+  for(const m of limpo.matchAll(/<(\/?)([a-zA-Z][\w-]*)[^<>]*?(\/?)>/g)){
+    const n = m[2].toLowerCase();
+    if(m[1]){ const i = pilha.lastIndexOf(n); if(i >= 0) pilha.length = i; }
+    else if(!m[3] && !VAZIAS.includes(n)) pilha.push(n);
+  }
+  return pilha.pop() || "";
+}
+// atalhos do Emmet: p → <p></p>, ul.lista → <ul class="lista"></ul>, ! → página completa
+function emmet(w){
+  if(w === "!") return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>|</title>\n</head>\n<body>\n  \n</body>\n</html>';
+  const m = /^([a-z][a-z0-9]*)?((?:[.#][\w-]+)*)$/.exec(w); if(!m) return null;
+  const tag = m[1] || (m[2] ? "div" : ""); if(!tag || !TAGS[tag]) return null;
+  const cls = (m[2].match(/\.[\w-]+/g) || []).map(x => x.slice(1)).join(" "), id = (m[2].match(/#[\w-]+/) || [""])[0].slice(1);
+  let at = (id ? ` id="${id}"` : "") + (cls ? ` class="${cls}"` : ""), dentro = "|";
+  if(tag === "a" && !at) at = ' href="|"', dentro = "";
+  if(tag === "img") return `<img${at || ' src="|" alt=""'}>`;
+  if(tag === "link") return '<link rel="stylesheet" href="|">';
+  return `<${tag}${at}>${dentro}</${tag}>`;
+}
+const classesDoc = () => [...new Set([...ed.value.matchAll(/\.([a-zA-Z_][\w-]*)\s*[{,:.]/g)].map(m => m[1]))];
+const idsDoc = () => [...new Set([...ed.value.matchAll(/\bid="([\w-]+)"/g)].map(m => m[1]))];
+
+/* ---------- sugestões ---------- */
+function sugTag(ant){
+  const t = ant.slice(ant.lastIndexOf("<")); let m;
+  if((m = /^<([\w-]*)$/.exec(t)))
+    return {pal:m[1], itens:Object.keys(TAGS).filter(k => k.startsWith(m[1].toLowerCase())).map(k => ({l:k, i:k, d:TAGS[k], k:"t"}))};
+  if((m = /([\w-]+)="([^"]*)$/.exec(t))){
+    const v = m[1] === "class" ? classesDoc() : (VALORES_ATTR[m[1]] || []);
+    return {pal:m[2], itens:v.filter(x => x.toLowerCase().startsWith(m[2].toLowerCase())).map(x => ({l:x, i:x, d:m[1], k:"v"}))};
+  }
+  const tag = (/^<([\w-]+)/.exec(t) || [])[1];
+  if(tag && /\s[\w:-]*$/.test(t)){
+    const pal = /([\w:-]*)$/.exec(t)[1], usados = a => new RegExp("[\\s]" + a.replace("-", "\\-") + "\\s*=").test(t);
+    return {pal, itens:(ATTRS_TAG[tag.toLowerCase()] || []).concat(ATTRS_GLOBAL).filter(a => a.startsWith(pal) && !usados(a))
+      .map(a => ({l:a, i:a === "data-" ? "data-" : a + '="|"', d:"atributo", k:"a"}))};
+  }
+  return null;
+}
+function sugHtml(lin){
+  const m = /(?:^\s*|>)([!\w.#-]+)$/.exec(lin); if(!m) return null;
+  const w = m[1];
+  if(w === "!") return {pal:w, itens:[{l:"!", i:emmet("!"), d:"página HTML5 completa", k:"e"}]};
+  return {pal:w, itens:Object.keys(TAGS).filter(k => k.startsWith(w)).map(k => ({l:k, i:emmet(k), d:"<" + k + ">", k:"e"}))};
+}
+function sugCss(ant, lin){
+  const css = ant.slice(ant.indexOf(">", ant.lastIndexOf("<style")) + 1), prof = (css.match(/\{/g) || []).length - (css.match(/\}/g) || []).length;
+  let m;
+  if(prof > 0){
+    if((m = /([a-z-]+)\s*:\s*([^;{}\n]*)$/.exec(lin))){
+      const pal = /([\w#.\-%]*)$/.exec(m[2])[1], vars = [...ed.value.matchAll(/(--[\w-]+)\s*:/g)].map(x => "var(" + x[1] + ")");
+      return {pal, itens:(CSS_VALS[m[1]] || []).concat(vars).filter(v => v.toLowerCase().startsWith(pal.toLowerCase())).map(v => ({l:v, i:v, d:m[1], k:"v"}))};
+    }
+    if((m = /(?:^\s*|[{;]\s*)([a-z-]*)$/.exec(lin)))
+      return {pal:m[1], min:1, itens:CSS_PROPS.filter(p => p.startsWith(m[1])).map(p => ({l:p, i:p + ": |;", d:"propriedade", k:"c"}))};
+    return null;
+  }
+  m = /([.#:@]?[\w-]*)$/.exec(lin);
+  const todos = Object.keys(TAGS).concat(classesDoc().map(c => "." + c), idsDoc().map(i => "#" + i), [":root", "@media (prefers-reduced-motion: reduce)"]);
+  return {pal:m[1], min:1, itens:todos.filter(x => x.startsWith(m[1])).map(x => ({l:x, i:x + " {\n  |\n}", d:"seletor", k:"c"}))};
+}
+function sugJs(ant){
+  const lin = ant.split("\n").pop();
+  if(["\"", "'", "`"].some(q => (lin.split(q).length - 1) % 2)) return null;                 // dentro de um texto
+  let m;
+  if((m = /[\w$)\]]\.([\w$]*)$/.exec(ant)))
+    return {pal:m[1], itens:JS_MEM.filter(x => x[0].toLowerCase().startsWith(m[1].toLowerCase())).map(x => ({l:x[0], i:x[1], d:x[2], k:"j"}))};
+  if(!(m = /([\w$]+)$/.exec(ant))) return null;
+  const pal = m[1], nomes = [...ed.value.matchAll(/\b(?:const|let|function)\s+([a-zA-Z_$][\w$]*)/g)].map(x => x[1]);
+  const itens = JS_SNIPS.map(x => ({l:x[0], i:x[1], d:x[2], k:"j"}))
+    .concat(JS_PALAVRAS.map(k => ({l:k, i:k, d:"", k:"j"})), [...new Set(nomes)].map(n => ({l:n, i:n, d:"seu código", k:"w"})));
+  return {pal, itens:itens.filter(x => x.l.startsWith(pal))};
+}
+function atualizarSug(forcado){
+  const pos = ed.selectionStart, ant = ed.value.slice(0, pos), c = ctx(ant), lin = ant.split("\n").pop();
+  const r = c === "tag" ? sugTag(ant) : c === "html" ? sugHtml(lin) : c === "css" ? sugCss(ant, lin) : c === "js" ? sugJs(ant) : null;
+  if(!r){ fecharSug(); return; }
+  const itens = r.itens.filter(x => x.l !== r.pal);                                              // some quando já está tudo digitado
+  if(!itens.length || (!forcado && r.pal.length < (r.min || 0))){ fecharSug(); return; }
+  sugItens = itens.slice(0, 12); sugSel = 0; sugNav = false; sugR = [pos - r.pal.length, pos];
+  sug.innerHTML = sugItens.map((x, n) => `<div class="si${n ? "" : " on"}" data-n="${n}"><b class="k k${x.k}">${ICONE[x.k]}</b><span class="sl">${esc(x.l)}</span><span class="sd">${esc(x.d)}</span></div>`).join("");
+  sug.hidden = false; posSug();
+}
+function fecharSug(){ sug.hidden = true; sugItens = []; }
+function posSug(){                                                                                // posição do cursor em pixels (fonte monoespaçada)
+  const l = ed.value.slice(0, sugR[0]).split("\n"), cw = $("#medida").getBoundingClientRect().width / 10, pai = ed.parentElement;
+  const x = 58 + l[l.length - 1].length * cw - ed.scrollLeft, y = 14 + l.length * 22 - ed.scrollTop;
+  sug.style.left = Math.max(48, Math.min(x, pai.clientWidth - sug.offsetWidth - 8)) + "px";
+  sug.style.top = (y + sug.offsetHeight > pai.clientHeight - 4 ? Math.max(4, y - 22 - sug.offsetHeight) : y) + "px";
+}
+function moverSug(d){
+  sugSel = (sugSel + d + sugItens.length) % sugItens.length;
+  sug.querySelectorAll(".si").forEach((el, n) => { el.classList.toggle("on", n === sugSel); if(n === sugSel) el.scrollIntoView({block:"nearest"}); });
+}
+function aceitar(n){
+  const it = sugItens[n]; if(!it) return;
+  const [ini, fim] = sugR, ind = recuoDe(ed.value.slice(0, ini));
+  let txt = it.i.replace(/\n/g, "\n" + ind); const k = txt.indexOf("|"); txt = txt.replace("|", "");
+  fecharSug(); colar(txt, ini, fim, ini + (k < 0 ? txt.length : k));
+  if(it.k === "a" || it.k === "c") atualizarSug(true);                                            // já mostra os valores possíveis
+}
+sug.addEventListener("mousedown", e => { e.preventDefault(); const r = e.target.closest(".si"); if(r) aceitar(+r.dataset.n); });
+ed.addEventListener("blur", () => setTimeout(fecharSug, 120));
+ed.addEventListener("click", fecharSug);
+ed.addEventListener("scroll", () => { if(!sug.hidden) posSug(); });
+
+/* ---------- fecha tags, aspas e parênteses ao digitar ---------- */
+ed.addEventListener("beforeinput", e => {
+  if(e.inputType !== "insertText" || !e.data || e.data.length !== 1) return;
+  const ch = e.data, a = ed.selectionStart, b = ed.selectionEnd, v = ed.value, ant = v.slice(0, a), prox = v.charAt(b), c = ctx(ant);
+  const faz = (txt, cur, sugere) => { e.preventDefault(); fecharSug(); colar(txt, a, b, cur); if(sugere) atualizarSug(true); };
+  if(c === "com" || c === "html") return;
+  if(c === "tag"){
+    if(ch === ">"){                                                                              // <p> → <p></p>
+      const m = /^<([a-zA-Z][\w-]*)(?:\s[^<>]*)?$/.exec(ant.slice(ant.lastIndexOf("<")));
+      if(m && prox === ">"){ e.preventDefault(); ed.setSelectionRange(a + 1, a + 1); return; }
+      if(m && !VAZIAS.includes(m[1].toLowerCase()) && !/\/$/.test(ant)) return faz("></" + m[1] + ">", a + 1);
+      return;
+    }
+    if(ch === "/" && ant.endsWith("<")){                                                         // </ → </p>
+      const nome = tagAberta(ant.slice(0, -1)); if(nome) return faz("/" + nome + ">", a + nome.length + 2);
+      return;
+    }
+  }
+  const pares = {"(":")", "[":"]", "{":"}", '"':'"', "'":"'", "`":"`"};
+  if(")]}\"'`".includes(ch) && prox === ch && a === b){ e.preventDefault(); ed.setSelectionRange(a + 1, a + 1); return; }   // escrever por cima do fecho
+  if(!(ch in pares) || a !== b) return;
+  if(c === "tag"){ if((ch !== '"' && ch !== "'") || !/=$/.test(ant)) return; }                  // aspas de atributo só depois do =
+  else if("\"'`".includes(ch) && /\w$/.test(ant)) return;                                         // não fecha depois de letra (d'água)
+  if(!(prox === "" || /[\s)\]};,.<>"'`]/.test(prox))) return;
+  faz(ch + pares[ch], a + 1, c === "tag");
+});
+
+/* ---------- teclado do editor ---------- */
+function novaLinha(){
+  const v = ed.value, a = ed.selectionStart, b = ed.selectionEnd, ant = v.slice(0, a), ind = recuoDe(ant), antes = ant.slice(-1);
+  const par = {"{":"}", "[":"]", "(":")"};
+  if((par[antes] && v.charAt(b) === par[antes]) || (antes === ">" && v.slice(b, b + 2) === "</" && ctx(ant) === "html"))
+    colar("\n" + ind + "  \n" + ind, a, b, a + ind.length + 3);                                   // abre um bloco com o fecho embaixo
+  else colar("\n" + ind + (par[antes] ? "  " : ""), a, b);
+}
+function tabulacao(){
+  const a = ed.selectionStart, ant = ed.value.slice(0, a);
+  if(ctx(ant) === "html"){
+    const m = /(?:^\s*|>)([!\w.#-]+)$/.exec(ant.split("\n").pop()), t = m && emmet(m[1]);
+    if(t){ const ind = recuoDe(ant), txt = t.replace(/\n/g, "\n" + ind), k = txt.indexOf("|"), ini = a - m[1].length; colar(txt.replace("|", ""), ini, a, ini + (k < 0 ? txt.length : k)); return; }
+  }
+  colar("  ", a, ed.selectionEnd);
+}
+ed.addEventListener("keydown", e => {
+  if(!sug.hidden){
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); sugNav = true; moverSug(e.key === "ArrowDown" ? 1 : -1); return; }
+    if(e.key === "Tab"){                                                                         // Tab: se a palavra já é um atalho (a, li, ul.lista), expande; senão aceita a sugestão
+      e.preventDefault();
+      const m = /(?:^\s*|>)([!\w.#-]+)$/.exec(ed.value.slice(0, ed.selectionStart).split("\n").pop());
+      if(sugItens[sugSel].k === "e" && !sugNav && m && emmet(m[1])){ fecharSug(); tabulacao(); } else aceitar(sugSel);
+      return;
+    }
+    if(e.key === "Enter" && !e.ctrlKey && (sugNav || sugItens[sugSel].k !== "e")){ e.preventDefault(); aceitar(sugSel); return; }
+    if(e.key === "Escape"){ e.preventDefault(); fecharSug(); return; }
+  }
+  if(e.ctrlKey && e.key === " "){ e.preventDefault(); atualizarSug(true); return; }
+  if(e.key === "Tab"){ e.preventDefault(); tabulacao(); }
+  else if(e.key === "Enter" && !e.ctrlKey){ e.preventDefault(); fecharSug(); novaLinha(); }
+  else if(e.key === "Enter" && e.ctrlKey){ e.preventDefault(); executar(); }
+});
+
+/* ============================================================
+   PASSO 5 · PRÉVIA E PORTÃO DE VALIDAÇÃO
+   ============================================================ */
+function montar(code){
+  let h = code;
+  const base = '<base target="_blank"><script>window.__erros=[];addEventListener("error",function(e){__erros.push(e.message)})<\/script>';   // só na prévia: links não saem da página e erros de JS são capturados
+  h = /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, m => m + base) : base + h;   // links não tiram o aluno da página
+  return h + `<!--${Date.now()}-->`;
+}
+function prever(){ return new Promise(ok => { fr.onload = () => ok(); fr.srcdoc = montar(ed.value); }); }
+
+async function executar(){
+  const L = LV[S.cur], st = stat();
+  await prever();
+  st.tent++;
+  const errosCarga = [...(fr.contentWindow.__erros || [])];
+  const ctx = {d: fr.contentDocument, w: fr.contentWindow, erros: errosCarga, raw: ed.value, code: ed.value.replace(/<!--[\s\S]*?-->/g, "")};
+  const res = L.checks.map(([, fn]) => { try { return !!fn(ctx); } catch(e){ return false; } });
+  prever();                                                                      // recarrega a prévia (os testes clicaram nela)
+  const falta = res.filter(x => !x).length;
+  document.querySelectorAll("#objs li").forEach((li, i) => { li.className = res[i] ? "ok" : "no"; li.querySelector("i").textContent = res[i] ? "✅" : "❌"; });
+  const msg = $("#msg");
+  if(falta){
+    msg.className = "msg ruim"; msg.textContent = `Quase! Faltam ${falta} objetivo${falta > 1 ? "s" : ""}. Veja a lista ❌ ao lado.`;
+    $("#balao").innerHTML = errosCarga.length ? "⚠ Erro no seu JavaScript: <code>" + esc(errosCarga[0]) + "</code><br>Leia a mensagem e procure a linha com problema." : "Ainda não abriu o portão. Leia o objetivo marcado com ❌ e tente de novo. Se precisar, peça uma <b>dica</b>!";
+    $("#btnSalv").hidden = st.tent < 3 || S.done[L.id] != null; salvar(); return;
+  }
+  if(L.id === "m5"){ const d = dados(ctx), n = d && d.find(autoraOk); if(n) S.obj = JSON.parse(JSON.stringify(n)); }   // guarda a pesquisa para o instrutor
+  if(L.id === "m6") S.peso = +(new Blob([ed.value]).size / 1024).toFixed(1);
+  if(S.done[L.id] == null){                                                       // primeira vez que passa
+    let g = L.base - 10 * st.dicas - (st.salv ? 30 : 0); g = Math.max(20, g);
+    if(!st.dicas && !st.salv){ g += 20; selo("🧠 Sem dicas"); }
+    if(st.tent === 1 && !st.salv){ g += 20; selo("🎯 Zero erros"); }
+    if(L.boss) selo("🐞 Caça-bugs");
+    if(L.id === "m5") selo("🔬 Pesquisadora");
+    if(L.id === "m6") selo("🔋 Página leve");
+    S.done[L.id] = g; S.xp += g; S.pass[L.id] = ed.value; msg.textContent = `🎉 Portão aberto! +${g} XP` + (L.id === "m6" ? " · sua página pesa " + (new Blob([ed.value]).size / 1024).toFixed(1) + " KB" : ""); confete();
+  }else msg.textContent = "🎉 Portão aberto!";
+  msg.className = "msg bom"; $("#btnProx").hidden = false; $("#btnProx").textContent = S.cur === LV.length - 1 ? "Ver resultado final →" : "Próxima missão →";
+  $("#balao").innerHTML = "Isso! Você dominou esta missão. Clique em <b>" + $("#btnProx").textContent.replace(" →", "") + "</b>.";
+  hud(); dots(); salvar();
+}
+const selo = n => S.selos[n] = (S.selos[n] || 0) + 1;
+
+/* ============================================================
+   PASSO 6 · TELAS, MISSÕES E BOTÕES
+   ============================================================ */
+function inicial(i){
+  const L = LV[i];
+  if(S.codes[L.id] != null) return S.codes[L.id];
+  if(L.herda) for(let k = i - 1; k >= 0; k--) if(!LV[k].boss){
+    const cod = S.pass[LV[k].id] != null ? S.pass[LV[k].id] : LV[k].sol;
+    return L.vilao ? L.vilao(cod) : cod;
+  }
+  return L.ini;
+}
+function minha(){
+  const a = S.autora, q = encodeURIComponent((a || "") + " cientista brasileira");
+  $("#minha").innerHTML = a ? `🔬 Minha cientista: <b>${esc(a)}</b> <button class="btn-sec" id="trocarA">✎ trocar</button> <a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">🔎 pesquisar</a>`
+                            : `🔬 Você ainda não escolheu sua cientista. <button class="btn-sec" id="trocarA">Escolher</button>`;
+}
+function abrir(i){
+  S.cur = i; const L = LV[i], st = stat();
+  $("#titulo").textContent = L.nome; $("#nomeNivel").textContent = "· " + L.nome;
+  $("#conceitoTxt").innerHTML = L.conceito; $("#conceito").open = true; $("#cient").innerHTML = L.cient; minha();
+  $("#balao").innerHTML = L.hist;
+  $("#objs").innerHTML = L.checks.map(c => `<li><i>⬜</i><span>${esc(c[0])}</span></li>`).join("");
+  ed.value = inicial(i); pintar(); prever();
+  $("#btnProx").hidden = true; $("#msg").className = "msg"; $("#msg").textContent = "Digite o código e clique em Executar (ou Ctrl + Enter).";
+  $("#btnSalv").hidden = st.tent < 3 || S.done[L.id] != null; dica(0); dots(); hud(); salvar();
+  if(S.done[L.id] != null){ $("#btnProx").hidden = false; $("#btnProx").textContent = i === LV.length - 1 ? "Ver resultado final →" : "Próxima missão →"; }
+}
+function dica(n){                                                     // n = 0 só atualiza o botão
+  const L = LV[S.cur], st = stat();
+  if(n){ const d = L.dicas[st.dicas - 1]; $("#balao").innerHTML = `<b>💡 Dica ${st.dicas}/3:</b> ${d[0]}` + (d[1] ? `<pre>${esc(d[1])}</pre>` : ""); }
+  $("#btnDica").textContent = st.dicas >= 3 ? "💡 Sem mais dicas" : `💡 Dica (${st.dicas}/3, −10 XP)`; $("#btnDica").disabled = st.dicas >= 3 && false;
+}
+function dots(){
+  const lib = liberado();
+  $("#dots").innerHTML = LV.map((L, i) => {
+    const cls = ["dot", L.boss ? "boss" : "", S.done[L.id] != null ? "feito" : "", i === S.cur ? "atual" : ""].join(" ");
+    return `<button class="${cls}" data-i="${i}" title="${esc(L.nome)}" ${(i <= lib || S.instr) ? "" : "disabled"}>${S.done[L.id] != null && i !== S.cur ? "✓" : L.curto}</button>`;
+  }).join("");
+}
+function hud(){ $("#xp").textContent = S.xp + " XP"; $("#btnI").classList.toggle("on", S.instr); }
+function relogio(){
+  if(!S.inicio) return;
+  const s = Math.floor(((S.fim || Date.now()) - S.inicio) / 1000);
+  $("#tempo").textContent = "⏱ " + String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+function confete(){
+  const cores = ["#f5a300", "#d6336c", "#7b2cbf", "#7be3f2", "#fff"];
+  for(let i = 0; i < 46; i++){
+    const e = document.createElement("i"); e.className = "cf";
+    e.style.cssText = `left:${Math.random() * 100}vw;background:${cores[i % 5]};animation-delay:${Math.random() * .5}s;animation-duration:${1.4 + Math.random()}s`;
+    document.body.appendChild(e); setTimeout(() => e.remove(), 3200);
+  }
+}
+
+function htmlAutora(){
+  const op = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"].map(r => `<optgroup label="${r}">` +
+    AUTORAS.filter(x => x.r === r).map(x => `<option value="${esc(x.n)}">${esc(x.n)} · ${esc(x.a)}</option>`).join("") + "</optgroup>").join("");
+  return `<div class="autora"><label>🔬 Qual cientista você vai pesquisar? (Missão 5)</label>
+    <select id="autSel"><option value="">— escolher depois —</option>${op}<option value="__outra">Outra (digitar o nome)…</option></select>
+    <input id="autOutra" placeholder="Nome da cientista" maxlength="40" hidden>
+    <button class="sec2" id="autSort" type="button">🎲 Sortear para mim</button></div>`;
+}
+function ligarAutora(){
+  const sel = $("#autSel"), out = $("#autOutra"), a = S.autora || "";
+  if(a && AUTORAS.some(x => x.n === a)) sel.value = a; else if(a){ sel.value = "__outra"; out.value = a; }
+  const mostra = () => { out.hidden = sel.value !== "__outra"; };
+  sel.onchange = mostra; mostra();
+  $("#autSort").onclick = () => { sel.value = AUTORAS[Math.floor(Math.random() * AUTORAS.length)].n; mostra(); };
+}
+const lerAutora = () => { const v = $("#autSel").value; return v === "__outra" ? $("#autOutra").value.trim() : v; };
+function telaAutora(){
+  $("#tela").hidden = false;
+  $("#tela").innerHTML = `<div class="cartao"><div style="font-size:3rem">🔬</div><h1>Sua cientista</h1><p>Escolha quem você vai pesquisar. Na Missão 5, o portão confere se o nome dela está no seu array.</p>${htmlAutora()}<button class="grande" id="autOk">Salvar</button></div>`;
+  ligarAutora();
+  $("#autOk").onclick = () => { S.autora = lerAutora(); salvar(); $("#tela").hidden = true; minha(); };
+}
+function resultado(){
+  const lv = Object.values(S.lv);
+  return {v:1, nome:S.nome, autora:S.autora || "", xp:S.xp, tempo:S.inicio ? Math.floor(((S.fim || Date.now()) - S.inicio) / 1000) : 0,
+          feitas:Object.keys(S.done).length, total:LV.length, selos:S.selos, dicas:lv.reduce((a, l) => a + (l.dicas || 0), 0),
+          salv:lv.filter(l => l.salv).length, peso:S.peso || null, cientista:S.obj || null, quando:new Date().toISOString()};
+}
+function telaResultado(){
+  const r = resultado(), cod = "CD1." + btoa(unescape(encodeURIComponent(JSON.stringify(r))));
+  $("#tela").hidden = false;
+  $("#tela").innerHTML = `<div class="cartao"><div style="font-size:2.4rem">📤</div><h1>Enviar meu resultado</h1>
+    <p>Copie o código e envie ao instrutor (ou baixe o arquivo). Você pode enviar de novo mais tarde, com mais pontos.</p>
+    <textarea class="cod" id="cod" readonly>${cod}</textarea>
+    <button class="grande" id="cp">📋 Copiar código</button><button class="sec2" id="dl">⬇ Baixar arquivo</button><button class="sec2" id="fx">Fechar</button><p id="cpMsg"></p></div>`;
+  $("#cp").onclick = async () => {
+    try { await navigator.clipboard.writeText(cod); } catch(e){ $("#cod").select(); document.execCommand("copy"); }
+    $("#cpMsg").textContent = "✅ Código copiado!";
+  };
+  $("#dl").onclick = () => {
+    const b = new Blob([JSON.stringify({...r, codigo:cod}, null, 1)], {type:"application/json"}), a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = "resultado-" + nrm(S.nome).replace(/\s+/g, "-") + ".json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $("#fx").onclick = () => { $("#tela").hidden = true; };
+}
+function telaInicio(){
+  const continua = S.inicio && !S.fim && Object.keys(S.done).length;
+  $("#tela").hidden = false;
+  $("#tela").innerHTML = `<div class="cartao"><div style="font-size:3rem">🔬</div><h1>Ciência Delas</h1>
+    <p><b>Oficina da Linha do Tempo.</b> Construa, passo a passo, uma linha do tempo interativa com a trajetória de cientistas brasileiras, em HTML, CSS e JavaScript. No fim, a sua cientista entra na página e você leva tudo funcionando.</p>
+    <input id="nome" placeholder="Seu nome ou apelido" maxlength="24" value="${esc(S.nome || "")}">
+    ${htmlAutora()}
+    <button class="grande" id="ir">${continua ? "▶ Continuar" : "▶ Começar"}</button>
+    ${continua ? '<button class="sec2" id="novo">Recomeçar do zero</button>' : ""}</div>`;
+  $("#ir").onclick = () => { S.nome = $("#nome").value.trim() || "Participante"; S.autora = lerAutora(); if(!S.inicio) S.inicio = Date.now(); $("#tela").hidden = true; abrir(liberado()); relogio(); };
+  ligarAutora();
+  if($("#novo")) $("#novo").onclick = () => { if(confirm("Apagar todo o progresso e recomeçar?")){ try { localStorage.removeItem(CHAVE); } catch(e){} location.reload(); } };
+}
+function telaFim(){
+  S.fim = S.fim || Date.now(); salvar(); relogio();
+  const rank = S.xp >= 750 ? "Cientista da programação 🏆" : S.xp >= 500 ? "Pesquisadora(o) 🔬" : "Aprendiz 🧪";
+  const selos = Object.entries(S.selos).map(([n, q]) => `<span class="selo">${n}${q > 1 ? " ×" + q : ""}</span>`).join("") + '<span class="selo">🏆 Linha do tempo no ar</span>';
+  $("#tela").hidden = false; confete();
+  $("#tela").innerHTML = `<div class="cartao"><div style="font-size:3rem">🎉</div><h1>Sua linha do tempo está no ar, ${esc(S.nome)}!</h1>
+    <div class="xpg">${S.xp} XP</div><p>${rank} · tempo ${$("#tempo").textContent.replace("⏱ ", "")}</p>
+    <div class="selos">${selos}</div>
+    <p>Baixe o arquivo e abra no navegador: ele funciona sem internet. Agora, compare: a sua página é leve?</p>
+    <button class="grande" id="baixar">⬇ Baixar minha página</button>
+    <button class="sec2" id="voltar">Ver minha página</button><button class="sec2" id="envia">📤 Enviar resultado</button><button class="sec2" id="de-novo">Jogar de novo</button></div>`;
+  $("#baixar").onclick = () => {
+    const b = new Blob([S.pass.m6 || S.pass.m5 || ed.value], {type: "text/html"}), a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = "minha-linha-do-tempo.html"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $("#voltar").onclick = () => { $("#tela").hidden = true; };
+  $("#envia").onclick = telaResultado;
+  $("#de-novo").onclick = () => { if(confirm("Apagar o progresso e jogar de novo?")){ try { localStorage.removeItem(CHAVE); } catch(e){} location.reload(); } };
+}
+
+$("#btnExec").onclick = executar;
+$("#btnProx").onclick = () => S.cur === LV.length - 1 ? telaFim() : abrir(S.cur + 1);
+$("#btnDica").onclick = () => { const st = stat(); if(st.dicas < 3){ st.dicas++; dica(1); salvar(); } };
+$("#btnSalv").onclick = () => {
+  if(!confirm("Usar o ponto de salvamento? O código da missão será preenchido para você e a missão vale 30 XP a menos.")) return;
+  stat().salv = true; ed.value = LV[S.cur].solFor ? LV[S.cur].solFor() : LV[S.cur].sol; ed.dispatchEvent(new Event("input")); $("#btnSalv").hidden = true;
+  $("#balao").innerHTML = "Código do ponto de salvamento carregado. Leia com calma, entenda cada linha e clique em <b>Executar</b>.";
+};
+$("#btnRes").onclick = telaResultado;
+$("#minha").onclick = e => { if(e.target.id === "trocarA") telaAutora(); };
+$("#btnReset").onclick = () => { if(confirm("Voltar o código desta fase ao começo?")){ delete S.codes[LV[S.cur].id]; abrir(S.cur); } };
+$("#btnI").onclick = () => { S.instr = !S.instr; hud(); dots(); salvar(); };
+$("#dots").onclick = e => { const b = e.target.closest(".dot"); if(b && !b.disabled) abrir(+b.dataset.i); };
+$("#abas").onclick = e => { const a = e.target.dataset.a; if(!a) return; document.body.dataset.aba = a; document.querySelectorAll("#abas button").forEach(b => b.classList.toggle("on", b.dataset.a === a)); };
+document.querySelector('#abas [data-a="missao"]').classList.add("on");
+setInterval(relogio, 1000);
+
+hud(); dots(); telaInicio();
+</script>
+</body>
+</html>
